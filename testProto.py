@@ -172,9 +172,9 @@ def testGetDict(dic):
 
 dic = readBinFile()
 
-dic = binToPb(dic)
+#dic = binToPb(dic)
 
-#testGetDict(dic)
+testGetDict(dic)
 
 # see top10
 snapshot = tracemalloc.take_snapshot()

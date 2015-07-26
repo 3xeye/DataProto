@@ -5,12 +5,12 @@ Created on 2015Äê7ÔÂ26ÈÕ
 
 @author: ml
 '''
-import pbjson
-from data_pb2 import Item_Data
-
-def converToPb(data):
-    reData = {}
-    for k, v in data.iteritems():
-        pb = pbjson.dict2pb(Item_Data, v)
-        reData[k] = pb
-    return reData
+import skill_general_data as s
+keys = set([])
+for k,v in s.data.iteritems():
+    if type(v) !=dict:
+        print k,'-',v
+    for k1,v1 in v.iteritems():
+        if type(v1) != int:
+            print k, v1, type(v1)
+print keys

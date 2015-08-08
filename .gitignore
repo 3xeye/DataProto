@@ -1,0 +1,8 @@
+/dataProtoConverter.pyc
+/data_pb2.pyc
+/item_data.pyc
+/pbjson.pyc
+/skill_general_data.pyc
+/testProto.pyc
+/utils.pyc
+*.pyc

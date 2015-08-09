@@ -49,17 +49,32 @@ print '--------------------m.l   ',diff
 
 
 import struct
-
+import item_data as ID
 def writeCppBytes():
     abytes = []
+    
     abytes.append( struct.pack('i', 3))
     abytes.append( struct.pack('i', 2))
     abytes.append( struct.pack('i', 1))
     abytes.append( struct.pack('i', 88))
     abytes.append( struct.pack('i', 90))
     abytes.append( struct.pack('i', 9))
-    
+     
     with open("cpp.data", 'wb') as f:
         f.writelines(abytes)
-
+ 
 writeCppBytes()
+
+import item_data as ID
+print len(ID.__name__)
+abytes = []
+key = "@"+str(len(ID.__name__))+'s'
+nameBytes = struct.pack(key, ID.__name__)
+print len(nameBytes)
+print struct.unpack(key, nameBytes)
+abytes.append(struct.pack('i', 8))
+abytes.append(struct.pack('i', 8))
+abytes.append(nameBytes)
+with open("cpp1.data", 'wb') as f:
+    f.writelines(abytes)
+

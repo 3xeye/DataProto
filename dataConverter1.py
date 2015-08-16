@@ -43,19 +43,21 @@ class DataConverter(object):
     # 数据表的名字
     def getModuleNameByte(self, keyType, name):
         length = len(name)
-        key = 'ii%ds' % length
-        return struct.pack(key, keyType, length, name)
+        key = 'ii%dsc' % length # %d表示字符串个数，包括后面的'\0'
+        return struct.pack(key, keyType, length+1, name, '\0')
     
     # 数据表的属性定义
     def getModuleAttrByte(self, valueAttrs):
         attrBytes = []
         length = len(valueAttrs)
         attrBytes.append(struct.pack('i', length))
-        for keyName, (aType, seq) in valueAttrs.iteritems():
-            packKey = '3h%ds' % len(keyName)
+        for i in xrange(len(valueAttrs)):
+            keyName = valueAttrs[i][0]
+            aType = valueAttrs[i][1]
+            packKey = '3h%dsc' % len(keyName)
             attrType = getAttrType(aType)
-            byte = struct.pack(packKey, len(keyName), attrType, seq, keyName)
-            print 'getModuleAttrByte:', len(keyName), attrType, seq, keyName
+            byte = struct.pack(packKey, len(keyName)+1, attrType, i, keyName, '\0')
+            print 'getModuleAttrByte:', len(keyName)+1, attrType, i, keyName
             attrBytes.append(byte)
         return attrBytes
     
@@ -63,6 +65,13 @@ class DataConverter(object):
     def getKeyByte(self, keyType, key):
         if keyType == KEY_TYPE_INT:
             return [struct.pack('I', key)]
+        elif keyType == KEY_TYPE_TUPLE_INT:
+            #print '-----getKeyByte',key
+            if type(key)!= tuple:
+                raise Exception("%s, %s not implemented!" % (str(keyType), str(key)))
+            if len(key)!=2:
+                raise Exception("%s, %s not implemented!" % (str(keyType), str(key)))
+            return [struct.pack('2I', *key)]
         else:
             raise Exception("%s, %s not implemented!" % (str(keyType), str(key)))
     
@@ -72,8 +81,9 @@ class DataConverter(object):
         elif valueType == float:
             return struct.pack('f', value)
         elif valueType == str:
-            packKey = 'i%ds' % len(value)
-            return struct.pack(packKey, len(value), value)
+            packKey = 'i%dsc' % len(value)
+            #print '--------------------m.l DataConverter.getValueByteSeperate ',packKey,len(value)
+            return struct.pack(packKey, len(value)+1, value, '\0')
         else:
             raise Exception('%s %s not implemented!' % (str(valueType), str(value)))
     
@@ -89,14 +99,15 @@ class DataConverter(object):
         valueBytes = []
         flags = [0, 0, 0, 0, 0]  # 支持160个属性
         seqs = []
-        for valueName, (valueType, seq) in valueAttrs:
+        seq = 0
+        for valueName, valueType in valueAttrs:
             if valueDict.has_key(valueName):
                 valueByte = self.getValueByteSeperate(valueType, valueDict.get(valueName))
                 valueBytes.append(valueByte)
                 flags = self.setValueFlag(flags, seq, 1)
                 seqs.append(seq)
-        print 'value flags:', flags,seqs
-        a = struct.pack('I', flags[0])
+            seq = seq + 1
+        print 'value flags:', flags, seqs
         return [struct.pack('5I', *flags)] + valueBytes
         
     # kv数据
@@ -104,7 +115,7 @@ class DataConverter(object):
         dataBytes = []
         i = 0;
         keyType = module.keyType
-        valueAttrs = sorted(module.valueAttrs.iteritems(), key=lambda d:d[1][1])
+        valueAttrs = module.valueAttrs
         print 'getModuleValueByte1:', valueAttrs
         for key, value in module.data.iteritems():
             keyByte = self.getKeyByte(keyType, key)
@@ -114,6 +125,9 @@ class DataConverter(object):
             i = i + 1
         print 'getModuleValueByte2:', i
         return [struct.pack('I', i)] + dataBytes
+    
+    def getModuleLenBytes(self, datas):
+        return [struct.pack('I', len(datas))]
     
     def convertDataToBytes(self, module):
         if not module.data:
@@ -140,98 +154,108 @@ class DataConverter(object):
             f.writelines(abytes)
         print 'write file over'
     
-    def writeData(self, data):
-        abytes = self.convertDataToBytes(data)
+    def writeData(self, datas):
+        abytes = self.getModuleLenBytes(datas)
+        for data in datas:
+            temp = self.convertDataToBytes(data)
+            abytes.extend(temp)
         self.writeBytesToFile(abytes)
     
 import item_data as ID
-ID.valueAttrs = {'name':(str, 1),
-'icon':(int, 2),
-'modelId':(int, 3),
-'modelScale':(float, 4),
-'dropItemSound':(int, 5),
-'useItemSound':(int, 6),
-'dragItemSound':(int, 7),
-'parentId':(int, 8),
-'isDisplayInDb':(int, 9),
-'quality':(int, 10),
-'type':(int, 11),
-'category':(int, 12),
-'subcategory':(int, 13),
-'valuable':(int, 14),
-'precious':(int, 15),
-'runeEquipExp':(int, 16),
-'heightOffset':(float, 17),
-'questItem':(int, 18),
-'cdgroup':(int, 19),
-'cd':(int, 20),
-'bPrice':(int, 21),
-'bPriceType':(int, 22),
-'sPrice':(int, 23),
-'sPriceType':(int, 24),
-'fPrice':(int, 25),
-'auctionPrice':(int, 26),
-'noBuyBack':(int, 28),
-'shopJingJieRequire':(int, 30),
-'bindType':(int, 31),
-'lvReq':(int, 32),
-'maxLvReq':(int, 33),
-'sexReq':(int, 34),
-'allowBodyType':(int, 35),
-'combatReq':(int, 37),
-'combatEquReq':(int, 38),
-'zaijuReq':(int, 39),
-'conType1':(int, 42),
-'conId1':(int, 43),
-'conOp1':(int, 44),
-'conParam1':(int, 45),
-'conType2':(int, 46),
-'conId2':(int, 47),
-'conOp2':(int, 48),
-'conParam2':(int, 49),
-'conType3':(int, 50),
-'conId3':(int, 51),
-'conOp3':(int, 52),
-'conParam3':(int, 53),
-'mwrap':(int, 54),
-'holdMax':(int, 55),
-'tgtType':(int, 56),
-'tgtDist':(float, 57),
-'ttlType':(int, 59),
-'ttl':(int, 60),
-'ttlExpireType':(int, 61),
-'ttlChangeId':(int, 62),
-'ttlChangeAmount':(int, 63),
-'ownership':(int, 65),
-'renewalType':(int, 66),
-'commonRenewalType':(int, 67),
-'mallRenewal30Days':(int, 68),
-'mallRenewalOwnership':(int, 69),
-'mallRenewalForever':(int, 70),
-'noSell':(int, 71),
-'noTrade':(int, 72),
-'noDrop':(int, 73),
-'noMail':(int, 74),
-'noConsign':(int, 75),
-'coinConsign':(int, 76),
-'noBooth':(int, 77),
-'noBoothBuy':(int, 78),
-'noStorage':(int, 79),
-'noRepair':(int, 80),
-'noLatch':(int, 81),
-'noReturn':(int, 82),
-'rideItemType':(int, 83),
-'spellTime':(float, 84),
-'accordingType':(int, 85),
-'ctrl':(int, 86),
-'navigatorName':(str, 87),
-'descTitle':(str, 89),
-'funcDesc':(str, 90),
-'desc':(str, 91),
-'historyDesc':(str, 92)}
+ID.keyType = 1
+ID.valueAttrs = [('name', str),
+('icon', int),
+('modelId', int),
+('modelScale', float),
+('dropItemSound', int),
+('useItemSound', int),
+('dragItemSound', int),
+('parentId', int),
+('isDisplayInDb', int),
+('quality', int),
+('type', int),
+('category', int),
+('subcategory', int),
+('valuable', int),
+('precious', int),
+('runeEquipExp', int),
+('heightOffset', float),
+('questItem', int),
+('cdgroup', int),
+('cd', int),
+('bPrice', int),
+('bPriceType', int,),
+('sPrice', int),
+('sPriceType', int),
+('fPrice', int),
+('auctionPrice', int),
+('noBuyBack', int),
+('shopJingJieRequire', int),
+('bindType', int),
+('lvReq', int),
+('maxLvReq', int),
+('sexReq', int),
+('allowBodyType', int),
+('combatReq', int),
+('combatEquReq', int),
+('zaijuReq', int),
+('conType1', int),
+('conId1', int),
+('conOp1', int),
+('conParam1', int),
+('conType2', int),
+('conId2', int),
+('conOp2', int),
+('conParam2', int),
+('conType3', int),
+('conId3', int),
+('conOp3', int),
+('conParam3', int),
+('mwrap', int),
+('holdMax', int),
+('tgtType', int),
+('tgtDist', float),
+('ttlType', int),
+('ttl', int),
+('ttlExpireType', int),
+('ttlChangeId', int),
+('ttlChangeAmount', int),
+('ownership', int),
+('renewalType', int),
+('commonRenewalType', int),
+('mallRenewal30Days', int),
+('mallRenewalOwnership', int),
+('mallRenewalForever', int),
+('noSell', int),
+('noTrade', int),
+('noDrop', int),
+('noMail', int),
+('noConsign', int),
+('coinConsign', int),
+('noBooth', int),
+('noBoothBuy', int),
+('noStorage', int),
+('noRepair', int),
+('noLatch', int),
+('noReturn', int),
+('rideItemType', int),
+('spellTime', float),
+('accordingType', int),
+('ctrl', int),
+('navigatorName', str),
+('descTitle', str),
+('funcDesc', str),
+('desc', str),
+('historyDesc', str)]
+print 'ID.valueAttrs len:',len(ID.valueAttrs)
 
-DataConverter().writeData(ID)
+import skill_general_data as SGD
+SGD.keyType = 2
+SGD.valueAttrs = [('learnPoint', int),
+('wsAdd1', int),
+('describe', str),]
 
+DataConverter().writeData([ID,SGD])
 
 with open('test.data', 'wb') as f:
-    f.writelines([struct.pack('3I', 1,1,2147483647)])
+    f.writelines([struct.pack('3I', 1, 1, 2147483647)])

@@ -401,22 +401,22 @@ print '--------------------m.l   ',diff
 
 
 ####################################################################protobuf sgd 1.71m 1.6288s 7472
-# sgdEFields = ['uiShape', 'rangeMax', 'circleShape', 'auras', 'castDelay', 'seAfterCalc', 'tgtSelectStrategy', 'preAmmoType', 'consumEquipNeed', 'selfStates', 'se', 'selfNoStates', 'chargeStgs', 'creations', 'addWsEff', 'collideHeight', 'graph2', 'graph1', 'graph3', 'graph4', 'wpSkillType', 'effects']
-# import skill_general_data as SGD
-# import time
-# from data_pb2 import Skill_General_Data
-# d = DataProtoBufConverter()
-# d.setConverterClass(Skill_General_Data, sgdEFields)
-# d.writeData(SGD.data, 'sgd_proto_conver')
-# adict = d.loadData('sgd_proto_conver')
-# print len(adict)
-# print adict.get((1101, 1))
-# keys = adict.keys()
-# start = time.clock()
-# for key in keys:
-#     a = adict.get(key)
-# end = time.clock()
-# diff = end - start
-# print '--------------------m.l   ',diff
+sgdEFields = ['uiShape', 'rangeMax', 'circleShape', 'auras', 'castDelay', 'seAfterCalc', 'tgtSelectStrategy', 'preAmmoType', 'consumEquipNeed', 'selfStates', 'se', 'selfNoStates', 'chargeStgs', 'creations', 'addWsEff', 'collideHeight', 'graph2', 'graph1', 'graph3', 'graph4', 'wpSkillType', 'effects']
+import skill_general_data as SGD
+import time
+from data_pb2 import Skill_General_Data
+d = DataProtoBufConverter()
+d.setConverterClass(Skill_General_Data, sgdEFields)
+d.writeData(SGD.data, 'sgd_proto_conver')
+adict = d.loadData('sgd_proto_conver')
+print len(adict)
+print adict.get((1101, 1))
+keys = adict.keys()
+start = time.clock()
+for key in keys:
+    a = adict.get(key)
+end = time.clock()
+diff = (end - start)/len(keys)
+print '--------------------m.l   ',diff
 
 

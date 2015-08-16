@@ -6,3 +6,5 @@
 /testProto.pyc
 /utils.pyc
 *.pyc
+*.data
+test.data
